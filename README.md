@@ -109,6 +109,61 @@ Then open `http://localhost:3456/?token=YOUR_AUTH_TOKEN`
 tail -f ~/.claude-daemon/daemon.stdout.log
 ```
 
+## Remote Access with Tailscale
+
+By default, the daemon is only accessible on your local network. To access it from **anywhere** (cellular, different Wi-Fi, another city), use [Tailscale](https://tailscale.com) — a free, encrypted mesh VPN.
+
+### Option A: Install Tailscale on the host (recommended)
+
+This is the simplest approach. Tailscale runs on your Mac and makes it reachable from any of your devices.
+
+**1. Install Tailscale on your Mac:**
+```bash
+# Via Homebrew
+brew install tailscale
+
+# Or download from https://tailscale.com/download/mac
+```
+
+**2. Install Tailscale on your phone:**
+- [iOS App Store](https://apps.apple.com/app/tailscale/id1470499037)
+- [Google Play Store](https://play.google.com/store/apps/details?id=com.tailscale.ipn)
+
+**3. Sign in on both devices** with the same account (Google, Microsoft, GitHub, etc.)
+
+**4. Find your Mac's Tailscale IP:**
+```bash
+tailscale ip -4
+# Example output: 100.64.0.1
+```
+
+**5. Access the daemon from your phone — from anywhere:**
+```
+http://100.64.0.1:3456/?token=YOUR_AUTH_TOKEN
+```
+
+That's it. This works on cellular, public Wi-Fi, from another country — anywhere both devices are signed into Tailscale.
+
+### Option B: Tailscale Docker sidecar
+
+If you want everything self-contained in Docker (no Tailscale install on the host):
+
+**1. Generate an auth key** at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys)
+
+**2. Add to `.env`:**
+```bash
+TS_AUTHKEY=tskey-auth-xxxxx
+```
+
+**3. Uncomment the `tailscale` service** in `docker-compose.yml`
+
+**4. Restart:**
+```bash
+docker compose up -d
+```
+
+The daemon will be accessible at `https://claude-daemon.your-tailnet.ts.net` with automatic HTTPS via Tailscale Serve.
+
 ## How It Works
 
 1. You open the web UI on your phone and type a task (e.g. "Fix the login bug in src/auth.js")
@@ -226,6 +281,7 @@ NOTIFY_TO=your.email@gmail.com
 | `DAEMON_DOMAIN` | `localhost` | Domain for Caddy HTTPS |
 | `PROJECTS_DIR` | `.` | Host directory to mount as /projects in Docker |
 | `EMAIL_ENABLED` | `false` | Enable email notifications |
+| `TS_AUTHKEY` | — | Tailscale auth key (for Docker sidecar option) |
 
 ## Architecture
 
@@ -287,8 +343,11 @@ When accessing via Caddy HTTPS, your browser will warn about the certificate. Th
 **Tasks failing immediately:**
 Check the container logs: `docker logs claude-daemon-app-1`
 
-**Phone can't connect:**
+**Phone can't connect (local network):**
 Make sure your phone is on the same Wi-Fi network as your laptop. Use your laptop's local IP (not `localhost`).
+
+**Phone can't connect (remote / cellular):**
+You need Tailscale (or similar) for access outside your local network. See the "Remote Access with Tailscale" section above.
 
 ## License
 

@@ -27,9 +27,27 @@ services:
     networks:
       - internal
 
+  # Optional: Tailscale sidecar for remote access from anywhere
+  # Uncomment this service and set TS_AUTHKEY in .env to enable
+  # tailscale:
+  #   image: tailscale/tailscale:latest
+  #   hostname: claude-daemon
+  #   environment:
+  #     - TS_AUTHKEY=${TS_AUTHKEY}
+  #     - TS_STATE_DIR=/var/lib/tailscale
+  #     - TS_USERSPACE=true
+  #     - TS_SERVE_CONFIG=/config/serve.json
+  #   volumes:
+  #     - tailscale_state:/var/lib/tailscale
+  #     - ./tailscale-serve.json:/config/serve.json:ro
+  #   restart: unless-stopped
+  #   networks:
+  #     - internal
+
 volumes:
   caddy_data:
   caddy_config:
+  # tailscale_state:
 
 networks:
   internal:
