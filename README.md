@@ -11,22 +11,43 @@ Think of it as **headless Claude Code with a remote control** — assign coding 
 - **Mobile-friendly dashboard** — View task status, output, and history from any device
 - **Output preview** — See Claude's response directly on the dashboard cards
 - **Task detail view** — Full output with timestamps, duration, and token usage
+- **MCP connector support** — Full access to GitHub, Gmail, and other MCP connectors (native mode)
 - **Email notifications** — Get notified when tasks complete or fail
-- **Docker + Caddy** — One command to run with automatic HTTPS
+- **Two deployment modes** — Run natively for full features, or Docker for easy setup
 - **Crash recovery** — Interrupted tasks automatically re-queue on restart
 - **Token auth** — Simple bearer token authentication with cookie support
 
-## Quick Start (Docker)
+## Which mode should I use?
 
-### 1. Clone and configure
+| | Native (Recommended) | Docker |
+|---|---|---|
+| **Setup** | `npm install && npm start` | `docker compose up --build -d` |
+| **MCP Connectors** | Full access (GitHub, Gmail, etc.) | Not available |
+| **Claude Auth** | Keychain (automatic) | API key required |
+| **File Access** | Full filesystem | Only mounted directories |
+| **HTTPS** | Add Tailscale or reverse proxy | Built-in via Caddy |
+| **Best for** | Daily use on your own machine | Quick eval, CI, or servers |
+
+**TL;DR:** Use **Native mode** if you're running on your own Mac/Linux machine and want Claude to use your MCP connectors (GitHub, Gmail, etc.). Use **Docker** for a containerized setup or on a server.
+
+## Quick Start (Native — Recommended)
+
+### 1. Prerequisites
+
+- **Node.js 20+** — `brew install node` or [nodejs.org](https://nodejs.org)
+- **Claude Code CLI** — `npm install -g @anthropic-ai/claude-code`
+- Make sure you've run `claude` at least once and completed login (this stores auth in your system Keychain)
+
+### 2. Clone and configure
 
 ```bash
 git clone https://github.com/vanand49d48x/claude-daemon.git
 cd claude-daemon
+npm install
 cp .env.example .env
 ```
 
-Edit `.env` and set two required values:
+Edit `.env` and set your auth token:
 
 ```bash
 # Generate a secure auth token
@@ -34,20 +55,22 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 # Add to .env:
 AUTH_TOKEN=<your-generated-token>
-ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
 
-Get your API key from [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys).
-
-> **Why API key?** Claude Code on macOS stores auth in the system Keychain, which Docker containers can't access. The `ANTHROPIC_API_KEY` env var is the reliable way to authenticate inside a container.
-
-### 2. Start
+Optionally set `DEFAULT_PROJECT_DIR` to your projects folder:
 
 ```bash
-docker compose up --build -d
+# Default working directory for tasks (when none specified)
+DEFAULT_PROJECT_DIR=/Users/you/projects
 ```
 
-### 3. Open the dashboard
+### 3. Start
+
+```bash
+npm start
+```
+
+### 4. Open the dashboard
 
 **On your laptop:**
 ```
@@ -72,31 +95,9 @@ hostname -I
 > - **iOS:** Share > Add to Home Screen
 > - **Android:** Chrome menu > Add to Home screen
 
-### 4. Optional: HTTPS via Caddy
+### 5. Run as macOS background service (optional)
 
-The docker-compose includes a Caddy reverse proxy for HTTPS. To use it:
-
-```
-https://localhost/?token=YOUR_AUTH_TOKEN
-```
-
-Your browser will show a self-signed certificate warning on first visit — accept it to proceed. For LAN access, plain HTTP on port 3456 is simpler and works fine on a home network.
-
-## Quick Start (Without Docker)
-
-```bash
-cd claude-daemon
-npm install
-cp .env.example .env
-# Edit .env with your AUTH_TOKEN (and optionally ANTHROPIC_API_KEY)
-npm start
-```
-
-Then open `http://localhost:3456/?token=YOUR_AUTH_TOKEN`
-
-> **Note:** Without Docker, Claude Code can authenticate via your macOS Keychain (if you've already run `claude` and logged in), so `ANTHROPIC_API_KEY` is optional.
-
-### Run as macOS background service
+Keep the daemon running automatically, even after reboots:
 
 ```bash
 # Install (starts on login, auto-restarts on crash)
@@ -108,6 +109,76 @@ Then open `http://localhost:3456/?token=YOUR_AUTH_TOKEN`
 # View logs
 tail -f ~/.claude-daemon/daemon.stdout.log
 ```
+
+### MCP Connectors
+
+In native mode, Claude Code has full access to any MCP connectors you've configured — GitHub, Gmail, file system tools, databases, etc. The daemon spawns `claude` directly on your machine, so it inherits your complete Claude Code configuration including all MCP servers.
+
+To set up connectors, run `claude` interactively and use `/mcp` to add MCP servers. Once configured, the daemon's tasks will automatically have access to them.
+
+## Quick Start (Docker)
+
+Use Docker for a containerized setup. Note: MCP connectors are **not available** in Docker mode.
+
+### 1. Clone and configure
+
+```bash
+git clone https://github.com/vanand49d48x/claude-daemon.git
+cd claude-daemon
+cp .env.example .env
+```
+
+Edit `.env` and set two required values:
+
+```bash
+# Generate a secure auth token
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Add to .env:
+AUTH_TOKEN=<your-generated-token>
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+```
+
+Get your API key from [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys).
+
+> **Why API key?** Claude Code on macOS stores auth in the system Keychain, which Docker containers can't access. The `ANTHROPIC_API_KEY` env var is the reliable way to authenticate inside a container.
+
+### 2. Set your projects directory
+
+```bash
+# Mount your projects into the container
+PROJECTS_DIR=/Users/you/Desktop
+```
+
+Tasks can then specify project directories like `/projects/myapp`, which maps to `/Users/you/Desktop/myapp` on the host.
+
+### 3. Start
+
+```bash
+docker compose up --build -d
+```
+
+### 4. Open the dashboard
+
+**On your laptop:**
+```
+http://localhost:3456/?token=YOUR_AUTH_TOKEN
+```
+
+**On your phone** (same Wi-Fi):
+```
+http://YOUR_LAPTOP_IP:3456/?token=YOUR_AUTH_TOKEN
+```
+
+### 5. Optional: HTTPS via Caddy
+
+The docker-compose includes a Caddy reverse proxy for HTTPS:
+
+```
+https://localhost/?token=YOUR_AUTH_TOKEN
+```
+
+Your browser will show a self-signed certificate warning on first visit — accept it to proceed. For LAN access, plain HTTP on port 3456 is simpler and works fine on a home network.
 
 ## Remote Access with Tailscale
 
