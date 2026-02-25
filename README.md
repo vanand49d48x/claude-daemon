@@ -110,6 +110,23 @@ Keep the daemon running automatically, even after reboots:
 tail -f ~/.claude-daemon/daemon.stdout.log
 ```
 
+### Email notifications (optional)
+
+Get an email every time a task completes or fails — useful when you submit a task from your phone and walk away.
+
+1. Enable [2-Step Verification](https://myaccount.google.com/security) on your Google account
+2. Generate an [App Password](https://myaccount.google.com/apppasswords) (select "Mail")
+3. Add to `.env`:
+
+```bash
+EMAIL_ENABLED=true
+SMTP_USER=your.email@gmail.com
+SMTP_PASS=xxxx-xxxx-xxxx-xxxx    # the 16-char App Password, not your Gmail password
+NOTIFY_TO=your.email@gmail.com   # where to receive notifications
+```
+
+4. Restart the daemon — you'll see `[notifier] Email notifications enabled` in the logs.
+
 ### MCP Connectors
 
 In native mode, Claude Code has full access to any MCP connectors you've configured — GitHub, Gmail, file system tools, databases, etc. The daemon spawns `claude` directly on your machine, so it inherits your complete Claude Code configuration including all MCP servers.
@@ -322,20 +339,9 @@ Returns:
 
 ## Email Notifications
 
-To get email notifications when tasks complete:
+See [Email notifications](#email-notifications-optional) in the Quick Start section above. Works with both native and Docker modes.
 
-1. Enable 2-Step Verification on your Google account
-2. Generate an App Password: Google Account > Security > App Passwords
-3. Add to `.env`:
-
-```bash
-EMAIL_ENABLED=true
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your.email@gmail.com
-SMTP_PASS=xxxx-xxxx-xxxx-xxxx
-NOTIFY_TO=your.email@gmail.com
-```
+The daemon sends a plain-text email for each completed or failed task, including the prompt, output preview (first 3000 chars), duration, token count, and cost. Emails are sent via Gmail SMTP using an App Password — no OAuth setup required.
 
 ## Configuration
 
