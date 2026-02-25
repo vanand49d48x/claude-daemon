@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Daemon</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Claude Daemon</h1>
+      <span id="daemon-status" class="status-badge">...</span>
+    </header>
+
+    <form class="task-form" id="task-form">
+      <div class="form-row">
+        <label for="prompt">Task Prompt</label>
+        <textarea id="prompt" name="prompt" placeholder="e.g. Fix the login redirect bug in src/auth/callback.js" rows="3" required></textarea>
+      </div>
+      <div class="form-row">
+        <label for="project_dir">Project Directory (optional)</label>
+        <input type="text" id="project_dir" name="project_dir" placeholder="/projects/my-app">
+      </div>
+      <button type="submit" class="btn btn-primary" id="submit-btn">Submit Task</button>
+    </form>
+
+    <div class="filters" id="filters">
+      <button class="filter-btn active" data-status="">All</button>
+      <button class="filter-btn" data-status="pending">Pending</button>
+      <button class="filter-btn" data-status="running">Running</button>
+      <button class="filter-btn" data-status="completed">Completed</button>
+      <button class="filter-btn" data-status="failed">Failed</button>
+    </div>
+
+    <div class="task-list" id="task-list">
+      <div class="empty-state">Loading tasks...</div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

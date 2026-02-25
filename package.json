@@ -1,0 +1,27 @@
+{
+  "name": "claude-daemon",
+  "version": "1.0.0",
+  "description": "Run Claude Code as a persistent background service with a mobile-friendly web UI",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/daemon.js",
+    "dev": "node --watch src/daemon.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "nanoid": "^5.1.6",
+    "nodemailer": "^6.10.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vanand49d48x/claude-daemon.git"
+  }
+}

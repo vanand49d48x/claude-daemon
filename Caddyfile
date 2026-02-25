@@ -1,0 +1,3 @@
+{$DAEMON_DOMAIN:localhost} {
+	reverse_proxy app:3456
+}

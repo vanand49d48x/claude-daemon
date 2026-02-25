@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Detail — Claude Daemon</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">&larr; Back to Dashboard</a>
+
+    <div id="task-detail">
+      <div class="empty-state">Loading task...</div>
+    </div>
+  </div>
+
+  <script>
+    const taskId = window.location.pathname.split('/task/')[1];
+
+    function timeAgo(dateStr) {
+      if (!dateStr) return '—';
+      const diff = Date.now() - new Date(dateStr + 'Z').getTime();
+      const s = Math.floor(diff / 1000);
+      if (s < 60) return s + 's ago';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function duration(start, end) {
+      if (!start || !end) return '—';
+      const ms = new Date(end + 'Z') - new Date(start + 'Z');
+      const s = Math.floor(ms / 1000);
+      if (s < 60) return s + 's';
+      const m = Math.floor(s / 60);
+      const rs = s % 60;
+      return m + 'm ' + rs + 's';
+    }
+
+    async function fetchTask() {
+      try {
+        const res = await fetch('/api/tasks/' + taskId);
+        if (!res.ok) throw new Error('Not found');
+        const task = await res.json();
+        render(task);
+        if (task.status === 'pending' || task.status === 'running') {
+          setTimeout(fetchTask, 2000);
+        }
+      } catch (err) {
+        document.getElementById('task-detail').innerHTML =
+          '<div class="empty-state">Task not found</div>';
+      }
+    }
+
+    function render(task) {
+      const el = document.getElementById('task-detail');
+      el.innerHTML = `
+        <div class="detail-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span class="task-id">#${task.id}</span>
+            <span class="task-status ${task.status}">${task.status}</span>
+          </div>
+          <dl class="detail-grid">
+            <dt>Created</dt><dd>${timeAgo(task.created_at)}</dd>
+            <dt>Started</dt><dd>${task.started_at ? timeAgo(task.started_at) : '—'}</dd>
+            <dt>Completed</dt><dd>${task.completed_at ? timeAgo(task.completed_at) : '—'}</dd>
+            <dt>Duration</dt><dd>${duration(task.started_at, task.completed_at)}</dd>
+            <dt>Project</dt><dd>${task.project_dir || '(default)'}</dd>
+            ${task.tokens_used ? `<dt>Tokens</dt><dd>${task.tokens_used.toLocaleString()}</dd>` : ''}
+            ${task.cost_usd ? `<dt>Cost</dt><dd>$${task.cost_usd.toFixed(4)}</dd>` : ''}
+          </dl>
+        </div>
+
+        <div class="detail-section">
+          <h2>Prompt</h2>
+          <div class="output-block">${escapeHtml(task.prompt)}</div>
+        </div>
+
+        ${task.output ? `
+        <div class="detail-section">
+          <h2>Output</h2>
+          <div class="output-block">${escapeHtml(task.output)}</div>
+        </div>` : ''}
+
+        ${task.error ? `
+        <div class="detail-section">
+          <h2>Error</h2>
+          <div class="output-block error-block">${escapeHtml(task.error)}</div>
+        </div>` : ''}
+
+        <div class="task-actions">
+          ${task.status === 'running' ? `<button class="btn btn-danger btn-small" onclick="cancelTask('${task.id}')">Cancel</button>` : ''}
+          ${['completed', 'failed', 'cancelled'].includes(task.status) ? `<button class="btn btn-danger btn-small" onclick="deleteTask('${task.id}')">Delete</button>` : ''}
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function cancelTask(id) {
+      if (!confirm('Cancel this task?')) return;
+      await fetch('/api/tasks/' + id + '/cancel', { method: 'POST' });
+      fetchTask();
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('Delete this task?')) return;
+      await fetch('/api/tasks/' + id, { method: 'DELETE' });
+      window.location.href = '/';
+    }
+
+    fetchTask();
+  </script>
+</body>
+</html>
