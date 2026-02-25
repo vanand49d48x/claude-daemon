@@ -30,9 +30,17 @@ async function fetchTasks() {
   }
 }
 
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr + 'Z').getTime();
+  const d = parseDate(dateStr);
+  if (!d) return '';
+  const diff = Date.now() - d.getTime();
   const s = Math.floor(diff / 1000);
   if (s < 60) return s + 's ago';
   const m = Math.floor(s / 60);
@@ -43,12 +51,14 @@ function timeAgo(dateStr) {
 }
 
 function duration(start, end) {
-  if (!start || !end) return '';
-  const ms = new Date(end + 'Z') - new Date(start + 'Z');
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return s + 's';
-  const m = Math.floor(s / 60);
-  const rs = s % 60;
+  const s = parseDate(start);
+  const e = parseDate(end);
+  if (!s || !e) return '';
+  const ms = e.getTime() - s.getTime();
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return sec + 's';
+  const m = Math.floor(sec / 60);
+  const rs = sec % 60;
   return m + 'm ' + rs + 's';
 }
 
@@ -67,6 +77,7 @@ function renderTasks(tasks, total) {
         <span class="task-status ${task.status}">${task.status}</span>
       </div>
       <div class="task-prompt">${escapeHtml(task.prompt)}</div>
+      ${task.output ? '<div class="task-output-preview">' + escapeHtml(task.output.slice(0, 200)) + (task.output.length > 200 ? '...' : '') + '</div>' : ''}
       <div class="task-meta">
         <span>${timeAgo(task.created_at)}</span>
         ${task.status === 'running' ? '<span>Running...</span>' : ''}

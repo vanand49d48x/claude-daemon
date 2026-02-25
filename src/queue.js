@@ -35,7 +35,7 @@ async function tick(config) {
     db.updateTask(task.id, {
       status,
       output: result.stdout,
-      error: result.stderr || null,
+      error: result.exitCode === 0 ? null : (result.stderr || null),
       exit_code: result.exitCode,
       session_id: result.sessionId,
       tokens_used: result.tokensUsed,

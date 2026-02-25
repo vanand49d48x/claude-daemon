@@ -5,7 +5,7 @@ services:
       - "3456:3456"
     volumes:
       - ./data:/data
-      - ${HOME}/.claude:/root/.claude:ro
+      - ${HOME}/.claude:/root/.claude
       - ${PROJECTS_DIR:-.}:/projects
     env_file: .env
     restart: unless-stopped

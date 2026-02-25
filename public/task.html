@@ -18,9 +18,18 @@
   <script>
     const taskId = window.location.pathname.split('/task/')[1];
 
+    function parseDate(dateStr) {
+      if (!dateStr) return null;
+      // Handle SQLite format "2026-02-25 03:04:26" and ISO "2026-02-25T03:04:26.000Z"
+      const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+      const d = new Date(normalized);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
     function timeAgo(dateStr) {
-      if (!dateStr) return '—';
-      const diff = Date.now() - new Date(dateStr + 'Z').getTime();
+      const d = parseDate(dateStr);
+      if (!d) return '—';
+      const diff = Date.now() - d.getTime();
       const s = Math.floor(diff / 1000);
       if (s < 60) return s + 's ago';
       const m = Math.floor(s / 60);
@@ -31,12 +40,14 @@
     }
 
     function duration(start, end) {
-      if (!start || !end) return '—';
-      const ms = new Date(end + 'Z') - new Date(start + 'Z');
-      const s = Math.floor(ms / 1000);
-      if (s < 60) return s + 's';
-      const m = Math.floor(s / 60);
-      const rs = s % 60;
+      const s = parseDate(start);
+      const e = parseDate(end);
+      if (!s || !e) return '—';
+      const ms = e.getTime() - s.getTime();
+      const sec = Math.floor(ms / 1000);
+      if (sec < 60) return sec + 's';
+      const m = Math.floor(sec / 60);
+      const rs = sec % 60;
       return m + 'm ' + rs + 's';
     }
 
@@ -55,6 +66,16 @@
       }
     }
 
+    function formatTimestamp(dateStr) {
+      const d = parseDate(dateStr);
+      if (!d) return '—';
+      return d.toLocaleString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', second: '2-digit',
+        hour12: true,
+      }) + ' (' + timeAgo(dateStr) + ')';
+    }
+
     function render(task) {
       const el = document.getElementById('task-detail');
       el.innerHTML = `
@@ -64,9 +85,9 @@
             <span class="task-status ${task.status}">${task.status}</span>
           </div>
           <dl class="detail-grid">
-            <dt>Created</dt><dd>${timeAgo(task.created_at)}</dd>
-            <dt>Started</dt><dd>${task.started_at ? timeAgo(task.started_at) : '—'}</dd>
-            <dt>Completed</dt><dd>${task.completed_at ? timeAgo(task.completed_at) : '—'}</dd>
+            <dt>Created</dt><dd>${formatTimestamp(task.created_at)}</dd>
+            <dt>Started</dt><dd>${formatTimestamp(task.started_at)}</dd>
+            <dt>Completed</dt><dd>${formatTimestamp(task.completed_at)}</dd>
             <dt>Duration</dt><dd>${duration(task.started_at, task.completed_at)}</dd>
             <dt>Project</dt><dd>${task.project_dir || '(default)'}</dd>
             ${task.tokens_used ? `<dt>Tokens</dt><dd>${task.tokens_used.toLocaleString()}</dd>` : ''}
